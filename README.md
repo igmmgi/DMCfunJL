@@ -20,14 +20,15 @@ test DMCfunJL # optional
 using DMCfunJL
 
 # Example 1
-res = dmc_sim(Prms())
+res = dmc_sim(Prms(fullData = true));
 dmc_summary(res)
-dmc_plot(res)
+dmc_plot_full(res)
 
 # Example 2
-res = dmc_sim(Prms(tau = 120))
+res = dmc_sim(Prms(tau = 120));
 dmc_summary(res)
 dmc_plot(res)
 ```
 
-![alt text](/figures/figure3.png)
+![alt text](/figures/figure1.png)
+![alt text](/figures/figure2.png)

@@ -18,7 +18,8 @@ dmc_trials,
 dmc_calculate_delta,
 dmc_calculate_caf,
 dmc_summary,
-dmc_plot
+dmc_plot,
+dmc_plot_full
 
 @with_kw struct Prms
   amp = 20.0
