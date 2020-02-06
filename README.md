@@ -23,12 +23,15 @@ using DMCfunJL
 res = dmc_sim(Prms(fullData = true));
 dmc_summary(res)
 dmc_plot_full(res)
+```
 
+![alt text](/figures/figure1.png)
+
+``` julia
 # Example 2
 res = dmc_sim(Prms(tau = 120));
 dmc_summary(res)
 dmc_plot(res)
 ```
 
-![alt text](/figures/figure1.png)
 ![alt text](/figures/figure2.png)
