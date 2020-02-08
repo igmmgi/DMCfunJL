@@ -19,7 +19,13 @@ dmc_calculate_delta,
 dmc_calculate_caf,
 dmc_summary,
 dmc_plot,
-dmc_plot_full
+dmc_plot_full,
+dmc_plot_activation,
+dmc_plot_trials,
+dmc_plot_cdf,
+dmc_plot_pdf,
+dmc_plot_caf,
+dmc_plot_delta
 
 @with_kw struct Prms
   amp = 20.0
@@ -63,7 +69,7 @@ struct DMC
   incomp::Simulation
 end
 
-function dmc_sim(prms)
+function dmc_sim(prms::Prms)
 
   @unpack amp, tau, aaShape, mu, sigm, bnds, resMean, resSD, nTrl, tmax, varDR, drLim, drShape, varSP, spShape, fullData, nTrlData, stepDelta, stepCAF = prms 
 
@@ -102,7 +108,7 @@ function dmc_sim(prms)
                           round(std(rts[errs])),
                           dmc_calculate_delta(rts, stepDelta),
                           dmc_calculate_caf(rts, errs, stepCAF)))
- 
+
   end
 
   return(DMC(prms, res[1], res[2]))
@@ -176,7 +182,6 @@ function dmc_calculate_caf(rts, errs, stepCAF)
   return caf
 end
 
-
 function dmc_summary(res::DMC)
   return(DataFrame(Comp     = ["comp", "incomp"],
                    rtCorr   = [res.comp.rtCorr,   res.incomp.rtCorr],
@@ -186,18 +191,17 @@ function dmc_summary(res::DMC)
                    sdRtErr  = [res.comp.sdRtErr,  res.incomp.sdRtErr]))
 end
 
-
-function dmc_plot_full(res::DMC)
-
-  # activation plot
+function dmc_plot_activation(res::DMC)
   p1 = plot(res.comp.activation, color = "green", xlabel = "Time (ms)", ylabel = "E[X(t)]", legend = :none, framestyle = :box, linewidth = :2)
   plot!(res.incomp.activation, color = "red", linewidth = :2)
   plot!(res.comp.drift, color = "black", linewidth = :2)
   plot!(-res.incomp.drift, color = "black", linestyle = :dot, linewidth = :2)
   xlims!((0, res.prms.tmax))
   ylims!((-res.prms.bnds - 20, res.prms.bnds + 20))
+  return p1
+end
 
-  # plot bottom right
+function dmc_plot_trials(res::DMC)
   p2 = plot(xlabel = "Time (ms)", ylabel = "X(t)", legend = :none, framestyle = :box)
   xlims!((0, res.prms.tmax))
   ylims!((-res.prms.bnds - 20, res.prms.bnds + 20))
@@ -208,73 +212,63 @@ function dmc_plot_full(res::DMC)
     idx = findfirst(abs.(res.incomp.trials[:, plt]) .>= res.prms.bnds)
     plot!(res.incomp.trials[1:idx, plt], color = "red")
   end
+  return p2
+end
 
-  # plot CDF
+function dmc_plot_cdf(res::DMC)
   kde_comp = kde(res.comp.rts)
   p3 = plot(kde_comp.x, kde_comp.density, color = "green", xlabel = "Time (ms)", ylabel = "CDF", legend = :none, framestyle = :box, linewidth = :2)
   kde_incomp = kde(res.incomp.rts)
   plot!(kde_incomp.x, kde_incomp.density, color = "red", linewidth = :2)
+  return p3
+end
 
-  # plot ecdf
+function dmc_plot_pdf(res::DMC)
   ecdf_comp = ecdf(res.comp.rts)
   p4 = plot(1:1000, ecdf_comp(1:1000), color = "green", xlabel = "Time (ms)", ylabel = "PDF", legend = :none, framestyle = :box, linewidth = :2)
   ecdf_incomp = ecdf(res.incomp.rts)
   plot!(1:1000, ecdf_incomp(1:1000), color = "red", linewidth = :2)
+  return p4
+end
 
-  # plot caf
+function dmc_plot_caf(res::DMC)
   p5 = plot(res.comp.caf, 
             color = "green", xlabel = "RT Bin", ylabel = "CAF", framestyle = :box, label = "Compatible", 
             legend = :bottomright, markershape = :circle, markersize = :2, legendfontsize = :8)
   ylims!((0, 1.1))
   plot!(res.incomp.caf, color = "red", label = "Incompatible", markershape = :circle, markersize = :2)
+  return p5
+end
 
-  # plot delta
+function dmc_plot_delta(res::DMC)
   p6 = plot([res.incomp.delta .+ res.comp.delta] ./ 2, [res.incomp.delta .- res.comp.delta], 
             legend = :none, framestyle = :box, color = "black", xlabel = "Time (ms)", ylabel = "Delta (ms)", 
             markershape = :circle, markersize = :2)
   xlims!((0, 1000))
   ylims!((-100, 100))
+  return p6
+end
 
-  # combine plots
+function dmc_plot_full(res::DMC)
+
+  p1 = dmc_plot_activation(res)
+  p2 = dmc_plot_trials(res)
+  p3 = dmc_plot_cdf(res) 
+  p4 = dmc_plot_pdf(res) 
+  p5 = dmc_plot_caf(res) 
+  p6 = dmc_plot_delta(res) 
+
   return plot(p1, p2, p3, p4, p5, p6, layout = (3, 2), size = (800, 600))
 
 end
 
 function dmc_plot(res::DMC)
 
-  # plot CDF
-  kde_comp = kde(res.comp.rts)
-  p3 = plot(kde_comp.x, kde_comp.density, 
-            color = "green", 
-            xlabel = "Time (ms)", ylabel = "CDF", 
-            legend = :none, framestyle = :box, linewidth = :2)
-  kde_incomp = kde(res.incomp.rts)
-  plot!(kde_incomp.x, kde_incomp.density, color = "red", linewidth = :2)
+  p3 = dmc_plot_cdf(res) 
+  p4 = dmc_plot_pdf(res) 
+  p5 = dmc_plot_caf(res) 
+  p6 = dmc_plot_delta(res) 
 
-  # plot ecdf
-  ecdf_comp = ecdf(res.comp.rts)
-  p4 = plot(1:1000, ecdf_comp(1:1000), 
-            color = "green", 
-            xlabel = "Time (ms)", ylabel = "PDF", 
-            legend = :none, framestyle = :box, linewidth = :2)
-  ecdf_incomp = ecdf(res.incomp.rts)
-  plot!(1:1000, ecdf_incomp(1:1000), color = "red", linewidth = :2)
-
-  # plot caf
-  p5 = plot(res.comp.caf, 
-            color = "green", xlabel = "RT Bin", ylabel = "CAF", framestyle = :box, label = "Compatible", 
-            legend = :bottomright, markershape = :circle, markersize = :2, legendfontsize = :8)
-  ylims!((0, 1.1))
-  plot!(res.incomp.caf, color = "red", label = "Incompatible", markershape = :circle, markersize = :2)
-
-  # plot delta
-  p6 = plot([res.incomp.delta .+ res.comp.delta] ./ 2, [res.incomp.delta .- res.comp.delta], 
-            legend = :none, framestyle = :box, color = "black", xlabel = "Time (ms)", ylabel = "Delta (ms)", 
-            markershape = :circle, markersize = :2)
-  xlims!((0, 1000))
-  ylims!((-100, 100))
-
-  # combine plots
   return plot(p3, p4, p5, p6, layout = (2, 2), size = (800, 600))
 
 end
