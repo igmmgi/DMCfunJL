@@ -121,23 +121,22 @@ function dmc_trials_full(nTrl, nTrlData, tmax, bnds, resMean, resSD, muVec, star
   errs = fill(true, nTrl)
   activation = zeros(tmax) 
   trials = zeros(tmax, nTrlData)
-  trial_activation = fill(0.0, tmax) 
 
   for t in 1:nTrl
       criterion = false
-      trial_activation[1] = starting_point[t] + muVec[1] + drift_rate[t] + (sigm * rand(Normal()))
-      @inbounds for i = 2:tmax
-          trial_activation[i] = trial_activation[i - 1] + muVec[i] + drift_rate[t] + (sigm * rand(Normal()))
-          if !criterion && (abs(trial_activation[i]) >= bnds)
+      trial_activation = starting_point[t] 
+      @inbounds for i = 1:tmax
+          trial_activation += muVec[i] + drift_rate[t] + (sigm * rand(Normal()))
+          if !criterion && (abs(trial_activation) >= bnds)
               rts[t] = i + rand(Normal(resMean, resSD))
-              errs[t] = trial_activation[i] > 0 ? false : true
+              errs[t] = trial_activation > 0 ? false : true
               criterion = true
           end
+          if t <= nTrlData
+              trials[i, t] = trial_activation
+          end
+          activation[i] += trial_activation
       end
-      if t <= nTrlData
-          trials[:, t] = trial_activation
-      end
-      activation .+= trial_activation
   end
   activation ./= nTrl
 
