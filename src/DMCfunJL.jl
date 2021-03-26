@@ -1,6 +1,6 @@
 module DMCfunJL
 
-using 
+using
 DataFrames,
 Distributions,
 KernelDensity,
@@ -31,19 +31,19 @@ dmc_plot_delta
   amp = 20.0
   tau = 30.0
   aaShape = 2.0
-  mu = 0.5 
-  sigm = 4 
+  mu = 0.5
+  sigm = 4
   bnds = 75.0
   resMean = 300.0
   resSD = 30.0
-  nTrl = 100000 
-  tmax = 1000 
-  varDR = false 
+  nTrl = 100000
+  tmax = 1000
+  varDR = false
   drLim = [0.1 0.7]
   drShape = 3.0
-  varSP = false 
+  varSP = false
   spShape = 3.0
-  fullData = false 
+  fullData = false
   nTrlData = 5
   stepDelta = 5
   stepCAF = 20
@@ -71,17 +71,17 @@ end
 
 function dmc_sim(prms::Prms)
 
-  @unpack amp, tau, aaShape, mu, sigm, bnds, resMean, resSD, nTrl, tmax, varDR, drLim, drShape, varSP, spShape, fullData, nTrlData, stepDelta, stepCAF = prms 
+  @unpack amp, tau, aaShape, mu, sigm, bnds, resMean, resSD, nTrl, tmax, varDR, drLim, drShape, varSP, spShape, fullData, nTrlData, stepDelta, stepCAF = prms
 
   tim            = 1:tmax
-  drift          = amp * exp.(-(tim) / tau) .* ((exp.(1) .* (tim) ./ (aaShape - 1) ./ tau).^(aaShape - 1))
+  drift          = amp .* exp.(-(tim) / tau) .* ((exp.(1) .* (tim) ./ (aaShape - 1) ./ tau).^(aaShape - 1))
   drift_rate     = fill(mu, nTrl)
   starting_point = fill(0.0, nTrl)
 
-  res = Simulation[] 
+  res = Simulation[]
   for comp  in [1, -1]    # comp/incomp
 
-    muVec = comp * ( drift .* ((aaShape - 1) ./ tim .- 1 ./ tau)) 
+    muVec = comp .* ( drift .* ((aaShape - 1) ./ tim .- 1 ./ tau))
 
     # variable starting points and drift rates
     if varDR
@@ -97,11 +97,11 @@ function dmc_sim(prms::Prms)
         activation, trials, rts, errs = dmc_trials(nTrl, nTrlData, tmax, bnds, resMean, resSD, muVec, starting_point, drift_rate, sigm)
     end
 
-    push!(res, Simulation(drift, 
+    push!(res, Simulation(drift,
                           activation,
                           trials,
                           rts,
-                          round(mean(rts[.!errs])), 
+                          round(mean(rts[.!errs])),
                           round(std(rts[.!errs])),
                           round(sum(errs) / nTrl * 100, digits = 2),
                           round(mean(rts[errs])),
@@ -116,15 +116,15 @@ function dmc_sim(prms::Prms)
 end
 
 function dmc_trials_full(nTrl, nTrlData, tmax, bnds, resMean, resSD, muVec, starting_point, drift_rate, sigm)
-    
+
   rts = fill(convert(Float64, tmax), nTrl)
   errs = fill(true, nTrl)
-  activation = zeros(tmax) 
+  activation = zeros(tmax)
   trials = zeros(tmax, nTrlData)
 
-  for t in 1:nTrl
+  Threads.@threads for t in 1:nTrl
       criterion = false
-      trial_activation = starting_point[t] 
+      trial_activation = starting_point[t]
       @inbounds for i = 1:tmax
           trial_activation += muVec[i] + drift_rate[t] + (sigm * rand(Normal()))
           if !criterion && (abs(trial_activation) >= bnds)
@@ -145,18 +145,18 @@ function dmc_trials_full(nTrl, nTrlData, tmax, bnds, resMean, resSD, muVec, star
 end
 
 function dmc_trials(nTrl, nTrlData, tmax, bnds, resMean, resSD, muVec, starting_point, drift_rate, sigm)
- 
+
   rts = fill(convert(Float64, tmax), nTrl)
   errs = fill(true, nTrl)
-  activation = zeros(tmax) 
+  activation = zeros(tmax)
   trials = zeros(tmax, nTrlData)
- 
-  for t = 1:nTrl
+
+  Threads.@threads for t = 1:nTrl
       trial_activation = starting_point[t]
       @inbounds for i = 1:tmax
           trial_activation += muVec[i] .+ drift_rate[t] .+ (sigm .* rand(Normal()))
           if (abs(trial_activation) >= bnds)
-              rts[t] = i + rand(Normal(resMean, resSD))
+              rts[t] = i .+ rand(Normal(resMean, resSD))
               errs[t] = trial_activation > 0 ? false : true
               break
           end
@@ -231,8 +231,8 @@ function dmc_plot_pdf(res::DMC)
 end
 
 function dmc_plot_caf(res::DMC)
-  p5 = plot(res.comp.caf, 
-            color = "green", xlabel = "RT Bin", ylabel = "CAF", framestyle = :box, label = "Compatible", 
+  p5 = plot(res.comp.caf,
+            color = "green", xlabel = "RT Bin", ylabel = "CAF", framestyle = :box, label = "Compatible",
             legend = :bottomright, markershape = :circle, markersize = :2, legendfontsize = :8)
   ylims!((0, 1.1))
   plot!(res.incomp.caf, color = "red", label = "Incompatible", markershape = :circle, markersize = :2)
@@ -240,8 +240,8 @@ function dmc_plot_caf(res::DMC)
 end
 
 function dmc_plot_delta(res::DMC)
-  p6 = plot([res.incomp.delta .+ res.comp.delta] ./ 2, [res.incomp.delta .- res.comp.delta], 
-            legend = :none, framestyle = :box, color = "black", xlabel = "Time (ms)", ylabel = "Delta (ms)", 
+  p6 = plot([res.incomp.delta .+ res.comp.delta] ./ 2, [res.incomp.delta .- res.comp.delta],
+            legend = :none, framestyle = :box, color = "black", xlabel = "Time (ms)", ylabel = "Delta (ms)",
             markershape = :circle, markersize = :2)
   xlims!((0, 1000))
   ylims!((-100, 100))
@@ -252,10 +252,10 @@ function dmc_plot_full(res::DMC)
 
   p1 = dmc_plot_activation(res)
   p2 = dmc_plot_trials(res)
-  p3 = dmc_plot_cdf(res) 
-  p4 = dmc_plot_pdf(res) 
-  p5 = dmc_plot_caf(res) 
-  p6 = dmc_plot_delta(res) 
+  p3 = dmc_plot_cdf(res)
+  p4 = dmc_plot_pdf(res)
+  p5 = dmc_plot_caf(res)
+  p6 = dmc_plot_delta(res)
 
   return plot(p1, p2, p3, p4, p5, p6, layout = (3, 2), size = (800, 600))
 
@@ -263,14 +263,13 @@ end
 
 function dmc_plot(res::DMC)
 
-  p3 = dmc_plot_cdf(res) 
-  p4 = dmc_plot_pdf(res) 
-  p5 = dmc_plot_caf(res) 
-  p6 = dmc_plot_delta(res) 
+  p3 = dmc_plot_cdf(res)
+  p4 = dmc_plot_pdf(res)
+  p5 = dmc_plot_caf(res)
+  p6 = dmc_plot_delta(res)
 
   return plot(p3, p4, p5, p6, layout = (2, 2), size = (800, 600))
 
 end
 
 end
-
