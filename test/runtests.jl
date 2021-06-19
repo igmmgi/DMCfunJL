@@ -1,12 +1,12 @@
-using DMCfunJL
+using DiffusionModelConflict
 using Test
 
 @testset "test_dmc_sim1" begin
 
     # Simulation 1 (Figure 3)
-    # amp = 20, tau = 30, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30 
+    # amp = 20, tau = 30, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30
 
-    res = dmc_sim(Prms()) 
+    res = dmc_sim(Prms())
 
     @test isapprox(res.comp.rtCorr, 440, atol = 3)
     @test isapprox(res.comp.sdRtCorr, 106, atol = 3)
@@ -18,11 +18,11 @@ using Test
 end
 
 @testset "test_dmc_sim2" begin
-    
-    # Simulation 2 (Figure 4)
-    # amp = 20, tau = 150, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30 
 
-    res = dmc_sim(Prms(tau = 150)) 
+    # Simulation 2 (Figure 4)
+    # amp = 20, tau = 150, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30
+
+    res = dmc_sim(Prms(tau = 150))
 
     @test isapprox(res.comp.rtCorr, 422, atol = 3)
     @test isapprox(res.comp.sdRtCorr, 90, atol = 3)
@@ -34,11 +34,11 @@ end
 end
 
 @testset "test_dmc_sim3" begin
-    
-    # Simulation 3 (Figure 5)
-    # amp = 20, tau = 90, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30 
 
-    res = dmc_sim(Prms(tau = 90)) 
+    # Simulation 3 (Figure 5)
+    # amp = 20, tau = 90, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30
+
+    res = dmc_sim(Prms(tau = 90))
 
     @test isapprox(res.comp.rtCorr, 420, atol = 3)
     @test isapprox(res.comp.sdRtCorr, 96, atol = 3)
@@ -50,12 +50,12 @@ end
 end
 
 @testset "test_dmc_sim4" begin
-    
+
     # Simulation 4 (Figure 6)
-    # amp = 20, tau = 30, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30 
+    # amp = 20, tau = 30, mu = 0.5, sigm = 4, bnds = 75, resMean = 300, resSD = 30
     # varSP = true
-    
-    res = dmc_sim(Prms(varSP = true)) 
+
+    res = dmc_sim(Prms(varSP = true))
 
     @test isapprox(res.comp.rtCorr, 436, atol = 3)
     @test isapprox(res.comp.sdRtCorr, 116, atol = 3)
@@ -65,5 +65,3 @@ end
     @test isapprox(res.incomp.perErr, 6.9, atol = 0.5)
 
 end
-
-
