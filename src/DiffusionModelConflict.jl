@@ -1,4 +1,4 @@
-module DiffusionModelConflict
+module DiffusionModelConflictdd
 
 using DataFrames, Distributions, Parameters, Makie, GLMakie, StatsBase
 

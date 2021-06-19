@@ -25,7 +25,7 @@ dmc_summary(res)
 dmc_plot_full(res)
 ```
 
-![alt text](/figures/figure1.png)
+![alt text](/figures/Figure1.png)
 
 ``` julia
 # Example 2
@@ -34,4 +34,4 @@ dmc_summary(res)
 dmc_plot(res)
 ```
 
-![alt text](/figures/figure2.png)
+![alt text](/figures/Figure2.png)
