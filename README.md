@@ -22,7 +22,7 @@ using DiffusionModelConflict
 # Example 1
 res = dmc_sim(Prms(fullData = true));
 res.summary
-dmc_plot(res) # NB first plot can be v. slow!
+plot(res) # NB first plot can be v. slow!
 ```
 
 ![alt text](/figures/Figure1.png)
@@ -31,7 +31,7 @@ dmc_plot(res) # NB first plot can be v. slow!
 # Example 2
 res = dmc_sim(Prms(tau = 120));
 res.summary
-dmc_plot(res) # NB first plot can be v. slow!
+plot(res) # NB first plot can be v. slow!
 ```
 
 ![alt text](/figures/Figure2.png)
