@@ -21,8 +21,8 @@ using DiffusionModelConflict
 
 # Example 1
 res = dmc_sim(Prms(fullData = true));
-dmc_summary(res)
-dmc_plot_full(res)
+res.summary
+dmc_plot(res) # NB first plot can be v. slow!
 ```
 
 ![alt text](/figures/Figure1.png)
@@ -30,8 +30,8 @@ dmc_plot_full(res)
 ``` julia
 # Example 2
 res = dmc_sim(Prms(tau = 120));
-dmc_summary(res)
-dmc_plot(res)
+res.summary
+dmc_plot(res) # NB first plot can be v. slow!
 ```
 
 ![alt text](/figures/Figure2.png)

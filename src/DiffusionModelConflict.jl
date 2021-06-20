@@ -1,11 +1,9 @@
+__precompile__()
 module DiffusionModelConflict
 
 using DataFrames, Distributions, Parameters, Makie, GLMakie, StatsBase
 
-export Prms,
-    Simulation,
-    DMC,
-    dmc_sim
+export Prms, DMC, dmc_sim, dmc_plot
 
 @with_kw struct Prms
     amp = 20.0
@@ -48,6 +46,7 @@ struct DMC
     prms::Prms
     comp::Simulation
     incomp::Simulation
+    summary::DataFrame
 end
 
 function dmc_sim(p::Prms)
@@ -145,7 +144,7 @@ function dmc_sim(p::Prms)
 
     end
 
-    return (DMC(p, res[1], res[2]))
+    return (DMC(p, res[1], res[2], _dmc_summary(res)))
 
 end
 
@@ -236,21 +235,24 @@ function _dmc_calculate_caf(rts, errs, nCAF)
     return caf
 end
 
-function _dmc_summary(res::DMC)
+function _dmc_summary(res)
     return (DataFrame(
         Comp = ["comp", "incomp"],
-        rtCorr = [res.comp.rtCorr, res.incomp.rtCorr],
-        sdRtCorr = [res.comp.sdRtCorr, res.incomp.sdRtCorr],
-        perErr = [res.comp.perErr, res.incomp.perErr],
-        rtErr = [res.comp.rtErr, res.incomp.rtErr],
-        sdRtErr = [res.comp.sdRtErr, res.incomp.sdRtErr],
+        rtCorr = [res[1].rtCorr, res[2].rtCorr],
+        sdRtCorr = [res[1].sdRtCorr, res[2].sdRtCorr],
+        perErr = [res[1].perErr, res[2].perErr],
+        rtErr = [res[1].rtErr, res[2].rtErr],
+        sdRtErr = [res[1].sdRtErr, res[2].sdRtErr],
     ))
 end
 
 
 # Plotting
 # TO DO: plot recepies/themes?
-function Makie.plot(res::DMC; figType = "summary", kwargs...)
+# TO DO: why is this so slow on first run? kwargs or just standard time-to-first plot?
+# TO DO: margins seem a bit tight on right of plot 
+# TO DO: filter potential kwargs for each individual plot 
+function dmc_plot(res::DMC; figType = "summary", kwargs...)
     fig = Figure()
     if figType == "summary"
         if res.prms.fullData
@@ -269,15 +271,15 @@ function Makie.plot(res::DMC; figType = "summary", kwargs...)
     elseif figType == "activation"
         fig = _dmc_plot_activation(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     elseif figType == "trials"
-        fig = _mc_plot_trials(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+        fig = _dmc_plot_trials(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     elseif figType == "pdf"
-        fig = _mc_plot_pdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+        fig = _dmc_plot_pdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     elseif figType == "cdf"
-        fig = _mc_plot_cdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+        fig = _dmc_plot_cdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     elseif figType == "caf"
-        fig = _mc_plot_caf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+        fig = _dmc_plot_caf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     elseif figType == "delta"
-        fig = _mc_plot_delta(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+        fig = _dmc_plot_delta(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
     end
     return fig
 end
