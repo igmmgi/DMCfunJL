@@ -1,24 +1,11 @@
-module DiffusionModelConflictdd
+module DiffusionModelConflict
 
 using DataFrames, Distributions, Parameters, Makie, GLMakie, StatsBase
 
 export Prms,
     Simulation,
     DMC,
-    dmc_sim,
-    dmc_trials_full,
-    dmc_trials,
-    dmc_calculate_delta,
-    dmc_calculate_caf,
-    dmc_summary,
-    dmc_plot,
-    dmc_plot_full,
-    dmc_plot_activation,
-    dmc_plot_trials,
-    dmc_plot_cdf,
-    dmc_plot_pdf,
-    dmc_plot_caf,
-    dmc_plot_delta
+    dmc_sim
 
 @with_kw struct Prms
     amp = 20.0
@@ -114,7 +101,7 @@ function dmc_sim(p::Prms)
         end
 
         if fullData
-            activation, trials, rts, errs = dmc_trials_full(
+            activation, trials, rts, errs = _dmc_trials_full(
                 nTrl,
                 nTrlData,
                 tmax,
@@ -126,7 +113,7 @@ function dmc_sim(p::Prms)
                 sigm,
             )
         else
-            activation, trials, rts, errs = dmc_trials(
+            activation, trials, rts, errs = _dmc_trials(
                 nTrl,
                 nTrlData,
                 tmax,
@@ -151,8 +138,8 @@ function dmc_sim(p::Prms)
                 round(sum(errs) / nTrl * 100, digits = 2),
                 round(mean(rts[errs])),
                 round(std(rts[errs])),
-                dmc_calculate_delta(rts, nDelta),
-                dmc_calculate_caf(rts, errs, nCAF),
+                _dmc_calculate_delta(rts, nDelta),
+                _dmc_calculate_caf(rts, errs, nCAF),
             ),
         )
 
@@ -162,7 +149,7 @@ function dmc_sim(p::Prms)
 
 end
 
-function dmc_trials_full(
+function _dmc_trials_full(
     nTrl,
     nTrlData,
     tmax,
@@ -179,6 +166,7 @@ function dmc_trials_full(
     activation = zeros(tmax)
     trials = zeros(tmax, nTrlData)
 
+    # TO DO: threads with random?
     for t = 1:nTrl
         criterion = false
         trial_activation = starting_point[t]
@@ -201,7 +189,7 @@ function dmc_trials_full(
 
 end
 
-function dmc_trials(
+function _dmc_trials(
     nTrl,
     nTrlData,
     tmax,
@@ -218,6 +206,7 @@ function dmc_trials(
     activation = zeros(tmax)
     trials = zeros(tmax, nTrlData)
 
+    # TO DO: threads with random?
     for t = 1:nTrl
         trial_activation = starting_point[t]
         @inbounds for i = 1:tmax
@@ -234,11 +223,11 @@ function dmc_trials(
 
 end
 
-function dmc_calculate_delta(rts, nDelta)
+function _dmc_calculate_delta(rts, nDelta)
     return quantile(rts, range(0, stop = 1, length = nDelta + 2)[2:end-1], sorted = false)
 end
 
-function dmc_calculate_caf(rts, errs, nCAF)
+function _dmc_calculate_caf(rts, errs, nCAF)
     edges = quantile(rts, range(0, stop = 1, length = nCAF + 1))
     caf = fill(0.0, nCAF)
     for bin = 1:nCAF
@@ -247,7 +236,7 @@ function dmc_calculate_caf(rts, errs, nCAF)
     return caf
 end
 
-function dmc_summary(res::DMC)
+function _dmc_summary(res::DMC)
     return (DataFrame(
         Comp = ["comp", "incomp"],
         rtCorr = [res.comp.rtCorr, res.incomp.rtCorr],
@@ -259,10 +248,41 @@ function dmc_summary(res::DMC)
 end
 
 
-
-
 # Plotting
-function dmc_plot_activation(
+# TO DO: plot recepies/themes?
+function Makie.plot(res::DMC; figType = "summary", kwargs...)
+    fig = Figure()
+    if figType == "summary"
+        if res.prms.fullData
+            fig = _dmc_plot_activation(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+            fig = _dmc_plot_trials(res, fig = fig, figrow = 1, figcol = 2; kwargs...)[1]
+            fig = _dmc_plot_pdf(res, fig = fig, figrow = 2, figcol = 1; kwargs...)[1]
+            fig = _dmc_plot_cdf(res, fig = fig, figrow = 2, figcol = 2; kwargs...)[1]
+            fig = _dmc_plot_caf(res, fig = fig, figrow = 3, figcol = 1; kwargs...)[1]
+            fig = _dmc_plot_delta(res, fig = fig, figrow = 3, figcol = 2, kwargs...)[1]
+        else
+            fig = _dmc_plot_pdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+            fig = _dmc_plot_cdf(res, fig = fig, figrow = 1, figcol = 2; kwargs...)[1]
+            fig = _dmc_plot_caf(res, fig = fig, figrow = 2, figcol = 1; kwargs...)[1]
+            fig = _dmc_plot_delta(res, fig = fig, figrow = 2, figcol = 2, kwargs...)[1]
+        end
+    elseif figType == "activation"
+        fig = _dmc_plot_activation(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    elseif figType == "trials"
+        fig = _mc_plot_trials(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    elseif figType == "pdf"
+        fig = _mc_plot_pdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    elseif figType == "cdf"
+        fig = _mc_plot_cdf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    elseif figType == "caf"
+        fig = _mc_plot_caf(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    elseif figType == "delta"
+        fig = _mc_plot_delta(res, fig = fig, figrow = 1, figcol = 1; kwargs...)[1]
+    end
+    return fig
+end
+
+function _dmc_plot_activation(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -299,7 +319,7 @@ function dmc_plot_activation(
     return fig, ax
 end
 
-function dmc_plot_trials(
+function _dmc_plot_trials(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -339,7 +359,7 @@ function dmc_plot_trials(
     return fig, ax
 end
 
-function dmc_plot_pdf(
+function _dmc_plot_pdf(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -375,7 +395,7 @@ function dmc_plot_pdf(
     return fig, ax
 end
 
-function dmc_plot_cdf(
+function _dmc_plot_cdf(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -409,7 +429,7 @@ function dmc_plot_cdf(
     return fig, ax
 end
 
-function dmc_plot_caf(
+function _dmc_plot_caf(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -442,7 +462,7 @@ function dmc_plot_caf(
     return fig, ax
 end
 
-function dmc_plot_delta(
+function _dmc_plot_delta(
     res::DMC;
     fig = nothing,
     figrow = 1,
@@ -472,32 +492,6 @@ function dmc_plot_delta(
     ylim = isempty(ylim) ? (-50, 100) : ylim
     ylims!(ax, ylim)
     return fig, ax
-end
-
-function dmc_plot_full(res::DMC)
-
-    fig = Figure()
-    fig = dmc_plot_activation(res, fig = fig, figrow = 1, figcol = 1)[1]
-    fig = dmc_plot_trials(res, fig = fig, figrow = 1, figcol = 2)[1]
-    fig = dmc_plot_pdf(res, fig = fig, figrow = 2, figcol = 1)[1]
-    fig = dmc_plot_cdf(res, fig = fig, figrow = 2, figcol = 2)[1]
-    fig = dmc_plot_caf(res, fig = fig, figrow = 3, figcol = 1)[1]
-    fig = dmc_plot_delta(res, fig = fig, figrow = 3, figcol = 2)[1]
-
-    return fig
-
-end
-
-function dmc_plot(res::DMC)
-
-    fig = Figure()
-    fig = dmc_plot_pdf(res, fig = fig, figrow = 1, figcol = 1)[1]
-    fig = dmc_plot_cdf(res, fig = fig, figrow = 1, figcol = 2)[1]
-    fig = dmc_plot_caf(res, fig = fig, figrow = 2, figcol = 1)[1]
-    fig = dmc_plot_delta(res, fig = fig, figrow = 2, figcol = 2)[1]
-
-    return fig
-
 end
 
 end
