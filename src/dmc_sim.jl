@@ -160,12 +160,11 @@ function _dmc_trials_full(
     activation = zeros(tmax)
     trials = zeros(tmax, nTrlData)
 
-    # TO DO: threads with random?
     for t = 1:nTrl
         criterion = false
         trial_activation = starting_point[t]
         @inbounds for i = 1:tmax
-            trial_activation += drcVec[i] + drift_rate[t] + (sigm * rand(Normal()))
+            trial_activation += drcVec[i] + drift_rate[t] + (sigm * randn())
             if !criterion && (abs(trial_activation) >= bnds)
                 rts[t] = i + residual_rt[t]
                 errs[t] = trial_activation < 0
@@ -200,11 +199,11 @@ function _dmc_trials(
     activation = zeros(tmax)
     trials = zeros(tmax, nTrlData)
 
-    # TO DO: threads with random?
-    for t = 1:nTrl
+    rngs = MersenneTwister.(1:Threads.nthreads())
+    Threads.@threads for t = 1:nTrl
         trial_activation = starting_point[t]
         @inbounds for i = 1:tmax
-            trial_activation += @. drcVec[i] + drift_rate[t] + (sigm * rand(Normal()))
+            trial_activation += @. drcVec[i] + drift_rate[t] + (sigm * randn(rngs[Threads.threadid()]))
             if (abs(trial_activation) >= bnds)
                 rts[t] = i .+ residual_rt[t]
                 errs[t] = trial_activation < 0
@@ -247,7 +246,7 @@ end
 # TO DO: why is this so slow on first run? kwargs or just standard time-to-first plot?
 # TO DO: margins seem a bit tight on right of plot
 # TO DO: filter potential kwargs for each individual plot
-function dmc_plot(res::DmcSim; figType = "summary", kwargs...)
+function Makie.plot(res::DmcSim; figType = "summary", kwargs...)
     fig = Figure()
     if figType == "summary"
         if res.prms.fullData

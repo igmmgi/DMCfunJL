@@ -6,13 +6,28 @@ struct DmcOb
     agg::DataFrame
 end
 
+function Base.show(io::IO, d::DmcOb)
+    println("DmcOb")
+end
+
 struct DataRaw
     data::DataFrame
 end
+
+function Base.show(io::IO, d::DataRaw)
+    println("DataRaws")
+    println(d.data)
+end
+
 struct DataOb
     subject::DataFrame
     agg::DataFrame
 end
+
+function Base.show(io::IO, d::DataOb)
+    println("DatOb")
+end
+
 
 nanmean(x) = mean(filter(!isnan, x))
 nanstd(x) = std(filter(!isnan, x))
